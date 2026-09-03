@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+data/_processed/
+data/uploads/
+data/hash_history.json
+data/submissions.json
