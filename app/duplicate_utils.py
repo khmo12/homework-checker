@@ -10,7 +10,10 @@ SIMILARITY_THRESHOLD = 5  # 해밍 거리 이 값 이하면 SIMILAR로 판단
 
 def _compute_hash(image_path: str):
     img = Image.open(image_path)
-    return imagehash.phash(img)
+    try:
+        return imagehash.phash(img)
+    finally:
+        img.close()
 
 
 def _load_history() -> dict:

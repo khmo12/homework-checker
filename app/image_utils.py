@@ -23,28 +23,41 @@ def preprocess_image(input_path: str, output_dir: str = PROCESSED_DIR) -> str:
     os.makedirs(output_dir, exist_ok=True)
 
     img = Image.open(input_path)
+    try:
+        width, height = img.size
+        if max(width, height) > MAX_LONG_SIDE:
+            img.draft("RGB", (MAX_LONG_SIDE, MAX_LONG_SIDE))
 
-    # EXIF 방향 정보 보정 (스마트폰 사진이 옆으로 눕혀져 저장되는 경우 방지)
-    img = _fix_orientation(img)
+        # EXIF 방향 정보 보정 (스마트폰 사진이 옆으로 눕혀져 저장되는 경우 방지)
+        oriented_img = _fix_orientation(img)
+        if oriented_img is not img:
+            img.close()
+        img = oriented_img
 
-    # RGBA 등 JPEG가 지원 안 하는 모드면 RGB로 변환
-    if img.mode != "RGB":
-        img = img.convert("RGB")
+        # RGBA 등 JPEG가 지원 안 하는 모드면 RGB로 변환
+        if img.mode != "RGB":
+            converted_img = img.convert("RGB")
+            img.close()
+            img = converted_img
 
-    width, height = img.size
-    long_side = max(width, height)
+        width, height = img.size
+        long_side = max(width, height)
 
-    if long_side > MAX_LONG_SIDE:
-        scale = MAX_LONG_SIDE / long_side
-        new_size = (int(width * scale), int(height * scale))
-        img = img.resize(new_size, Image.LANCZOS)
+        if long_side > MAX_LONG_SIDE:
+            scale = MAX_LONG_SIDE / long_side
+            new_size = (int(width * scale), int(height * scale))
+            resized_img = img.resize(new_size, Image.LANCZOS)
+            img.close()
+            img = resized_img
 
-    filename = f"{uuid.uuid4().hex}_processed.jpg"
-    output_path = os.path.join(output_dir, filename)
+        filename = f"{uuid.uuid4().hex}_processed.jpg"
+        output_path = os.path.join(output_dir, filename)
 
-    img.save(output_path, "JPEG", quality=JPEG_QUALITY, optimize=True)
+        img.save(output_path, "JPEG", quality=JPEG_QUALITY, optimize=True)
 
-    return output_path
+        return output_path
+    finally:
+        img.close()
 
 
 def _fix_orientation(img: Image.Image) -> Image.Image:

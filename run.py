@@ -5,6 +5,24 @@ import os
 import glob
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return render_template_string(
+        """
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head><meta charset="UTF-8"><title>업로드 오류</title></head>
+        <body style="max-width: 480px; margin: 48px auto; padding: 0 24px; font-family: sans-serif;">
+          <h1>업로드 용량이 너무 큽니다</h1>
+          <p>한 번에 업로드할 수 있는 파일 크기는 50MB까지입니다.</p>
+          <a href="/">다시 업로드</a>
+        </body>
+        </html>
+        """
+    ), 413
 
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
