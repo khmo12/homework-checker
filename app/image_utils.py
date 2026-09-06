@@ -1,3 +1,4 @@
+import uuid
 from PIL import Image
 import io
 import os
@@ -38,7 +39,7 @@ def preprocess_image(input_path: str, output_dir: str = PROCESSED_DIR) -> str:
         new_size = (int(width * scale), int(height * scale))
         img = img.resize(new_size, Image.LANCZOS)
 
-    filename = os.path.splitext(os.path.basename(input_path))[0] + "_processed.jpg"
+    filename = f"{uuid.uuid4().hex}_processed.jpg"
     output_path = os.path.join(output_dir, filename)
 
     img.save(output_path, "JPEG", quality=JPEG_QUALITY, optimize=True)
