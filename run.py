@@ -1,11 +1,16 @@
-from flask import Flask, jsonify, request, render_template_string
+from functools import wraps
+
+from flask import Flask, jsonify, request, render_template_string, redirect, session, url_for
 from app.ai_engine import check_homework
 from app.submission_utils import save_submission, get_all_submissions, get_submissions_by_student
 import os
 import glob
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-in-render")
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+
+TEACHER_PASSWORD = os.environ.get("TEACHER_PASSWORD")
 
 
 @app.errorhandler(413)
@@ -26,6 +31,57 @@ def request_entity_too_large(error):
 
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
+
+
+def teacher_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if session.get("is_teacher") is not True:
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+
+    return wrapped_view
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if TEACHER_PASSWORD and password == TEACHER_PASSWORD:
+            session["is_teacher"] = True
+            return redirect(url_for("submissions"))
+        error = "비밀번호가 올바르지 않습니다."
+
+    return render_template_string(
+        """
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>선생님 로그인</title>
+        </head>
+        <body style="max-width: 480px; margin: 48px auto; padding: 0 24px; font-family: sans-serif;">
+          <h1>선생님 로그인</h1>
+          {% if error %}<p style="color: #B3261E;">{{ error }}</p>{% endif %}
+          <form method="POST">
+            <label for="password">비밀번호</label>
+            <input id="password" name="password" type="password" required autofocus>
+            <button type="submit">로그인</button>
+          </form>
+        </body>
+        </html>
+        """,
+        error=error,
+    )
+
+
+@app.route("/logout")
+def logout():
+    session.pop("is_teacher", None)
+    return redirect(url_for("login"))
+
 
 UPLOAD_FORM_HTML = """
 <!DOCTYPE html>
@@ -399,11 +455,13 @@ def check_test():
 
 
 @app.route("/submissions")
+@teacher_required
 def submissions():
     """제출 기록 전체 확인용 테스트 라우트"""
     return jsonify(get_all_submissions())
 
 @app.route("/submissions/<student_name>")
+@teacher_required
 def submissions_by_student(student_name):
     records = get_submissions_by_student(student_name)
     return jsonify(records)
