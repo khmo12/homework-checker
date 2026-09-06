@@ -3,11 +3,8 @@ import os
 import uuid
 from datetime import datetime
 
-SUBMISSIONS_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data",
-    "submissions.json",
-)
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+SUBMISSIONS_FILE = os.path.join(DATA_DIR, "submissions.json")
 
 
 def _load_all():
@@ -21,6 +18,7 @@ def _load_all():
 
 
 def _save_all(submissions):
+    os.makedirs(os.path.dirname(SUBMISSIONS_FILE), exist_ok=True)
     with open(SUBMISSIONS_FILE, "w", encoding="utf-8") as f:
         json.dump(submissions, f, ensure_ascii=False, indent=2)
 

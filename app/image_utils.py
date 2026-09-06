@@ -4,9 +4,11 @@ import os
 
 MAX_LONG_SIDE = 1800  # 긴 변 기준 리사이즈 크기 (px)
 JPEG_QUALITY = 85      # JPEG 압축 품질 (0~100, 85면 화질 저하 거의 안 느껴짐)
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+PROCESSED_DIR = os.path.join(DATA_DIR, "_processed")
 
 
-def preprocess_image(input_path: str, output_dir: str = "data/_processed") -> str:
+def preprocess_image(input_path: str, output_dir: str = PROCESSED_DIR) -> str:
     """
     원본 이미지를 받아서:
     - 긴 변이 MAX_LONG_SIDE를 넘으면 비율 유지하며 리사이즈

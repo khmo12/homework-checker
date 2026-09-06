@@ -3,7 +3,8 @@ from PIL import Image
 import json
 import os
 
-HASH_HISTORY_PATH = "data/hash_history.json"
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+HASH_HISTORY_PATH = os.path.join(DATA_DIR, "hash_history.json")
 SIMILARITY_THRESHOLD = 5  # 해밍 거리 이 값 이하면 SIMILAR로 판단
 
 

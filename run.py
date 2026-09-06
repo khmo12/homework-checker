@@ -6,7 +6,8 @@ import glob
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = "data/uploads"
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
 
 UPLOAD_FORM_HTML = """
 <!DOCTYPE html>
@@ -374,7 +375,7 @@ def upload():
 @app.route("/check-test")
 def check_test():
     """기존 테스트용 라우트 (data 폴더 사진으로 확인)"""
-    image_paths = sorted(glob.glob("data/*.jpg"))
+    image_paths = sorted(glob.glob(os.path.join(DATA_DIR, "*.jpg")))
     result = check_homework(image_paths, subject_name="국어")
     return jsonify(result)
 
