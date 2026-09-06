@@ -95,6 +95,10 @@ UPLOAD_FORM_HTML = """
       <input type="text" name="student_name" required>
     </div>
     <div class="field">
+      <label>학번 (선택)</label>
+      <input type="text" name="student_id" placeholder="예: 20315">
+    </div>
+    <div class="field">
       <label>숙제명</label>
       <input type="text" name="assignment_name" required>
     </div>
@@ -219,6 +223,15 @@ RESULT_PAGE_HTML = """
     font-size: 13px;
     color: var(--review);
   }
+  .idnote {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--review);
+  }
+  .idnote.mismatch {
+    color: var(--fail);
+    font-weight: 600;
+  }
 
   .footer {
     margin-top: 40px;
@@ -233,7 +246,7 @@ RESULT_PAGE_HTML = """
 </head>
 <body>
   <h1>{{ student_name }} — {{ assignment_name }}</h1>
-  <p class="meta">{{ submitted_at }} 제출</p>
+  <p class="meta">{{ submitted_at }} 제출{% if student_id %} · 학번 {{ student_id }}{% endif %}</p>
 
   {% if past_submissions %}
   <p class="meta">이전 제출 {{ past_submissions|length }}건</p>
@@ -278,6 +291,11 @@ RESULT_PAGE_HTML = """
         {% if r.duplicate_check.matched_with %}({{ r.duplicate_check.matched_with }}와 유사){% endif %}
       </p>
       {% endif %}
+      {% if r.student_id_match == "MISMATCH" %}
+      <p class="idnote mismatch">⚠ 학번 불일치 — 다른 학생 사진일 수 있습니다</p>
+      {% elif r.student_id_match == "UNCERTAIN" %}
+      <p class="idnote">학번 판독 불가 — 확인 필요</p>
+      {% endif %}
     </div>
   {% endfor %}
   </div>
@@ -303,6 +321,7 @@ def upload():
         return jsonify({"error": "선택된 파일이 없습니다."}), 400
 
     student_name = request.form.get("student_name", "").strip()
+    student_id = request.form.get("student_id", "").strip()
     assignment_name = request.form.get("assignment_name", "").strip()
 
     if not student_name or not assignment_name:
@@ -316,13 +335,14 @@ def upload():
         file.save(save_path)
         saved_paths.append(save_path)
 
-    result = check_homework(saved_paths, subject_name="국어")
+    result = check_homework(saved_paths, subject_name="국어", student_id=student_id)
 
     submission_record = save_submission(
         student_name=student_name,
         subject_name="국어",
         assignment_name=assignment_name,
         check_result=result,
+        student_id=student_id,
     )
 
     past_submissions = [
@@ -334,12 +354,14 @@ def upload():
         response = dict(result)
         response["submission_id"] = submission_record["submission_id"]
         response["student_name"] = student_name
+        response["student_id"] = student_id
         response["assignment_name"] = assignment_name
         return jsonify(response)
 
     return render_template_string(
         RESULT_PAGE_HTML,
         student_name=student_name,
+        student_id=student_id,
         assignment_name=assignment_name,
         submitted_at=submission_record["submitted_at"],
         results=result.get("results", []),
@@ -361,6 +383,11 @@ def check_test():
 def submissions():
     """제출 기록 전체 확인용 테스트 라우트"""
     return jsonify(get_all_submissions())
+
+@app.route("/submissions/<student_name>")
+def submissions_by_student(student_name):
+    records = get_submissions_by_student(student_name)
+    return jsonify(records)
 
 
 if __name__ == "__main__":

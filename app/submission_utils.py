@@ -25,11 +25,12 @@ def _save_all(submissions):
         json.dump(submissions, f, ensure_ascii=False, indent=2)
 
 
-def save_submission(student_name, subject_name, assignment_name, check_result):
+def save_submission(student_name, subject_name, assignment_name, check_result, student_id=""):
     submissions = _load_all()
     record = {
         "submission_id": str(uuid.uuid4()),
         "student_name": student_name,
+        "student_id": student_id,
         "subject": subject_name,
         "assignment_name": assignment_name,
         "submitted_at": datetime.now().isoformat(timespec="seconds"),

@@ -14,8 +14,30 @@ _client = genai.Client(api_key=_api_key)
 MODEL_NAME = "gemini-3.6-flash"
 
 
-def build_prompt(subject_name: str, image_count: int) -> str:
+def build_prompt(subject_name: str, image_count: int, student_id: str = "") -> str:
     """과목명과 이미지 개수를 받아서 판정 프롬프트를 만든다."""
+
+    if student_id:
+        student_id_section = f"""
+학번 확인:
+이 숙제를 제출한 학생의 학번은 "{student_id}"로 등록되어 있다.
+사진 안에 학생이 손으로 쓴 학번이 보이면, 등록된 학번("{student_id}")과 일치하는지 확인하라.
+
+student_id_match 값 기준:
+- "MATCH": 사진에서 학번을 읽을 수 있고, 등록된 학번과 일치함
+- "MISMATCH": 사진에서 학번을 읽을 수 있고, 등록된 학번과 다름
+- "NOT_FOUND": 사진 어디에도 학번이 적혀있지 않음 (학번을 안 쓰는 경우도 흔하니 정상적인 상황임)
+- "UNCERTAIN": 학번이 적혀있는 것 같지만 흐리거나 가려서 확실히 읽을 수 없음
+
+학번 불일치는 학생이 숙제를 안 했다는 뜻이 아니다. 단순히 "다른 학생 이름표가 붙은 것 아닌지"
+선생님이 확인해야 한다는 신호일 뿐이다. 이 판단은 PASS/FAIL/REVIEW 판정에 영향을 주지 않는다.
+"""
+    else:
+        student_id_section = """
+학번 확인:
+이번 제출에는 등록된 학번이 없다. student_id_match는 모든 이미지에 대해 "NOT_PROVIDED"로 고정하라.
+"""
+
     return f"""
 너는 학교 숙제 검사 보조 AI다.
 
@@ -60,7 +82,7 @@ missing_or_weak가 채워진 PASS는 "형식은 부족하지만 통과시킨 건
 이번 숙제는 "{subject_name}" 과목이다.
 만약 이미지가 "{subject_name}" 숙제가 아니라 다른 과목의 숙제로 보인다면,
 assignment_match를 "mismatch"로 표시하고 result는 FAIL로 판정하라.
-
+{student_id_section}
 지금부터 총 {image_count}장의 이미지가 순서대로 주어진다.
 각 이미지는 image_index 0부터 {image_count - 1}까지 순서대로 대응한다.
 
@@ -82,6 +104,7 @@ assignment_match를 "mismatch"로 표시하고 result는 FAIL로 판정하라.
       "status": "match 또는 mismatch",
       "reason": "간단한 이유"
     }},
+    "student_id_match": "MATCH 또는 MISMATCH 또는 NOT_FOUND 또는 UNCERTAIN 또는 NOT_PROVIDED",
     "work_evidence": {{
       "problem_solving": true 또는 false,
       "grading_marks": true 또는 false,
@@ -170,16 +193,20 @@ def validate_and_correct(entry: dict) -> dict:
     entry["correction_reason"] = correction_reason
 
     # PASS인데 missing_or_weak가 채워져 있으면 "주의가 필요한 PASS"로 플래그
-    # (선생님이 전체 PASS 목록을 훑어볼 때 우선적으로 다시 볼 수 있도록)
     missing_items = entry.get("missing_or_weak", [])
-    entry["needs_attention"] = (
-        corrected_result == "PASS" and bool(missing_items)
-    )
+    needs_attention = corrected_result == "PASS" and bool(missing_items)
+
+    # 규칙 5: 학번이 불일치(MISMATCH)로 판정되면, PASS/FAIL/REVIEW 판정은 절대 안 건드리되
+    # 선생님이 "다른 학생 이름표 아닌지" 확인할 수 있도록 needs_attention만 강제로 켠다.
+    if entry.get("student_id_match") == "MISMATCH":
+        needs_attention = True
+
+    entry["needs_attention"] = needs_attention
 
     return entry
 
 
-def check_homework(image_paths: list[str], subject_name: str = "국어") -> dict:
+def check_homework(image_paths: list[str], subject_name: str = "국어", student_id: str = "") -> dict:
     """
     이미지 경로 리스트를 받아서 Gemini에 보내고,
     검증까지 마친 최종 결과를 반환한다.
@@ -213,7 +240,7 @@ def check_homework(image_paths: list[str], subject_name: str = "국어") -> dict
                 "file_obj": uploaded
             })
 
-        prompt = build_prompt(subject_name, len(uploaded_files))
+        prompt = build_prompt(subject_name, len(uploaded_files), student_id)
 
         contents = [prompt]
         for item in uploaded_files:
