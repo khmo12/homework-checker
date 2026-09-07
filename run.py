@@ -61,15 +61,89 @@ def login():
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>선생님 로그인</title>
+          <style>
+            :root {
+              --color-primary: #29466B;
+              --color-background: #FAFAF8;
+              --color-border: #E2DED4;
+            }
+            * { box-sizing: border-box; }
+            body {
+              background: var(--color-background);
+              color: #1C1C1A;
+              font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              margin: 0;
+            }
+            .login-page {
+              max-width: 360px;
+              min-height: 100vh;
+              margin: 0 auto;
+              padding: 48px 24px;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+            }
+            .login-title {
+              font-size: 28px;
+              line-height: 1.3;
+              margin: 0 0 32px;
+            }
+            .login-label {
+              display: block;
+              font-size: 14px;
+              line-height: 1.4;
+              margin-bottom: 8px;
+            }
+            .login-input {
+              width: 100%;
+              min-height: 44px;
+              border: 1px solid var(--color-border);
+              border-radius: 4px;
+              padding: 12px;
+              background: #FFFFFF;
+              color: inherit;
+              font: inherit;
+            }
+            .login-input:focus {
+              border-color: var(--color-primary);
+              outline: 2px solid var(--color-primary);
+              outline-offset: 0;
+            }
+            .login-error {
+              color: #B3261E;
+              font-size: 14px;
+              line-height: 1.4;
+              margin: 8px 0 0;
+            }
+            .login-button {
+              width: 100%;
+              min-height: 44px;
+              margin-top: 24px;
+              padding: 0 24px;
+              border: 0;
+              border-radius: 4px;
+              background: var(--color-primary);
+              color: #FFFFFF;
+              font: inherit;
+              font-weight: 600;
+              cursor: pointer;
+            }
+            @media (max-width: 480px) {
+              .login-page { padding: 32px 24px; }
+              .login-button { min-height: 48px; }
+            }
+          </style>
         </head>
-        <body style="max-width: 480px; margin: 48px auto; padding: 0 24px; font-family: sans-serif;">
-          <h1>선생님 로그인</h1>
-          {% if error %}<p style="color: #B3261E;">{{ error }}</p>{% endif %}
-          <form method="POST">
-            <label for="password">비밀번호</label>
-            <input id="password" name="password" type="password" required autofocus>
-            <button type="submit">로그인</button>
-          </form>
+        <body>
+          <main class="login-page">
+            <h1 class="login-title">선생님 로그인</h1>
+            <form method="POST">
+              <label class="login-label" for="password">비밀번호</label>
+              <input class="login-input" id="password" name="password" type="password" required autofocus>
+              {% if error %}<p class="login-error">{{ error }}</p>{% endif %}
+              <button class="login-button" type="submit">로그인</button>
+            </form>
+          </main>
         </body>
         </html>
         """,
