@@ -63,14 +63,17 @@ def login():
           <title>선생님 로그인</title>
           <style>
             :root {
-              --color-primary: #29466B;
-              --color-background: #FAFAF8;
-              --color-border: #E2DED4;
+              --paper: #F7F6F2;
+              --surface: #FFFFFF;
+              --ink: #1C1C1A;
+              --ink-muted: #6E6B62;
+              --rule: #DDD8CB;
+              --error: #B3261E;
             }
             * { box-sizing: border-box; }
             body {
-              background: var(--color-background);
-              color: #1C1C1A;
+              background: var(--paper);
+              color: var(--ink);
               font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
               margin: 0;
             }
@@ -97,20 +100,20 @@ def login():
             .login-input {
               width: 100%;
               min-height: 44px;
-              border: 1px solid var(--color-border);
+              border: 1px solid var(--rule);
               border-radius: 4px;
               padding: 12px;
-              background: #FFFFFF;
+              background: var(--surface);
               color: inherit;
               font: inherit;
             }
             .login-input:focus {
-              border-color: var(--color-primary);
-              outline: 2px solid var(--color-primary);
+              border-color: var(--ink);
+              outline: 2px solid var(--ink);
               outline-offset: 0;
             }
             .login-error {
-              color: #B3261E;
+              color: var(--error);
               font-size: 14px;
               line-height: 1.4;
               margin: 8px 0 0;
@@ -122,7 +125,7 @@ def login():
               padding: 0 24px;
               border: 0;
               border-radius: 4px;
-              background: var(--color-primary);
+              background: var(--ink);
               color: #FFFFFF;
               font: inherit;
               font-weight: 600;
@@ -169,9 +172,12 @@ UPLOAD_FORM_HTML = """
 <style>
   :root {
     --paper: #F7F6F2;
+    --surface: #FFFFFF;
     --ink: #1C1C1A;
     --ink-muted: #6E6B62;
     --rule: #DDD8CB;
+    --error: #A23B32;
+    --error-surface: #FBEDEA;
   }
   * { box-sizing: border-box; }
   body {
@@ -180,18 +186,18 @@ UPLOAD_FORM_HTML = """
     font-family: 'Pretendard', -apple-system, sans-serif;
     max-width: 480px;
     margin: 0 auto;
-    padding: 48px 24px;
+    padding: 32px 20px 48px;
   }
   h1 {
     font-family: 'Noto Serif KR', serif;
-    font-size: 26px;
+    font-size: 25px;
     font-weight: 700;
     margin: 0 0 4px;
   }
   .sub {
     color: var(--ink-muted);
     font-size: 14px;
-    margin: 0 0 36px;
+    margin: 0 0 32px;
   }
   label {
     display: block;
@@ -202,6 +208,7 @@ UPLOAD_FORM_HTML = """
   .field { margin-bottom: 20px; }
   input[type=text] {
     width: 100%;
+    min-height: 44px;
     padding: 10px 0;
     border: none;
     border-bottom: 1px solid var(--rule);
@@ -212,16 +219,79 @@ UPLOAD_FORM_HTML = """
     outline: none;
   }
   input[type=text]:focus { border-bottom-color: var(--ink); }
-  input[type=file] {
-    width: 100%;
-    font-size: 14px;
+  .upload-label {
+    display: flex;
+    min-height: 120px;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    border: 2px dotted var(--rule);
     color: var(--ink-muted);
-    padding: 12px 0;
-    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    text-align: center;
   }
+  .upload-label:focus-within {
+    border-color: var(--ink);
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .upload-label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .upload-copy { padding: 20px; }
+  .upload-copy strong {
+    display: block;
+    color: var(--ink);
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .file-summary[hidden], .error-banner[hidden], .loading[hidden] { display: none; }
+  .file-name { overflow-wrap: anywhere; }
+  .error-banner {
+    margin: 20px 0 0;
+    padding: 14px 16px;
+    border-left: 3px solid var(--error);
+    background: var(--error-surface);
+    color: var(--error);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .retry-button {
+    width: auto;
+    min-height: 44px;
+    margin: 12px 0 0;
+    padding: 0 16px;
+    background: transparent;
+    border: 1px solid currentColor;
+    color: var(--error);
+    font-size: 14px;
+  }
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0 0;
+    color: var(--ink-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .spinner {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--ink);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
   button {
     margin-top: 12px;
     width: 100%;
+    min-height: 48px;
     padding: 14px;
     background: var(--ink);
     color: var(--paper);
@@ -232,31 +302,117 @@ UPLOAD_FORM_HTML = """
     font-weight: 600;
     cursor: pointer;
   }
-  button:hover { opacity: 0.88; }
+  button:disabled { cursor: not-allowed; opacity: .42; }
+  button:not(:disabled):hover { opacity: 0.88; }
+  .secondary-fields { margin-top: 24px; }
+  .secondary-fields summary {
+    color: var(--ink-muted);
+    cursor: pointer;
+    font-size: 13px;
+    min-height: 44px;
+    padding: 12px 0;
+  }
+  .secondary-fields[open] summary { margin-bottom: 12px; }
+  @media (min-width: 481px) {
+    body { padding-top: 48px; }
+  }
 </style>
 </head>
 <body>
   <h1>숙제 사진 업로드</h1>
-  <p class="sub">학생 이름과 숙제명을 입력하고 사진을 3~5장 올려주세요.</p>
-  <form method="POST" action="/upload" enctype="multipart/form-data">
+  <p class="sub">숙제 사진을 올려주세요</p>
+  <form id="upload-form" method="POST" action="/upload" enctype="multipart/form-data">
     <div class="field">
-      <label>학생 이름</label>
-      <input type="text" name="student_name" required>
+      <label for="student-id">학생 ID (선택)</label>
+      <input id="student-id" type="text" name="student_id" placeholder="예: 20315" autocomplete="off">
     </div>
     <div class="field">
-      <label>학번 (선택)</label>
-      <input type="text" name="student_id" placeholder="예: 20315">
+      <label class="upload-label" for="photos">
+        <span id="upload-copy" class="upload-copy"><strong>사진을 선택해주세요</strong><span>여러 장 선택 가능</span></span>
+        <input id="photos" type="file" name="photos" accept="image/*" multiple required>
+      </label>
     </div>
-    <div class="field">
-      <label>숙제명</label>
-      <input type="text" name="assignment_name" required>
+    <details class="secondary-fields">
+      <summary>제출 정보 입력</summary>
+      <div class="field">
+        <label for="student-name">학생 이름</label>
+        <input id="student-name" type="text" name="student_name" required>
+      </div>
+      <div class="field">
+        <label for="assignment-name">숙제명</label>
+        <input id="assignment-name" type="text" name="assignment_name" required>
+      </div>
+    </details>
+    <div id="error-banner" class="error-banner" role="alert" hidden>
+      <div>일시적인 오류가 발생했습니다. 다시 시도해주세요.</div>
+      <button id="retry-button" class="retry-button" type="button">다시 시도</button>
     </div>
-    <div class="field">
-      <label>숙제 사진 (여러 장 선택 가능)</label>
-      <input type="file" name="photos" accept="image/*" multiple required>
+    <div id="loading" class="loading" role="status" aria-live="polite" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <span>채점 중입니다. 최대 1~2분 정도 걸릴 수 있어요.</span>
     </div>
-    <button type="submit">제출하고 검사하기</button>
+    <button id="submit-button" type="submit" disabled>제출하고 검사하기</button>
   </form>
+  <script>
+    const form = document.getElementById('upload-form');
+    const fileInput = document.getElementById('photos');
+    const uploadCopy = document.getElementById('upload-copy');
+    const submitButton = document.getElementById('submit-button');
+    const errorBanner = document.getElementById('error-banner');
+    const retryButton = document.getElementById('retry-button');
+    const loading = document.getElementById('loading');
+    const controls = form.querySelectorAll('input, button, summary');
+    let submitting = false;
+
+    function updateFileSummary() {
+      const files = Array.from(fileInput.files);
+      if (!files.length) {
+        uploadCopy.innerHTML = '<strong>사진을 선택해주세요</strong><span>여러 장 선택 가능</span>';
+        return;
+      }
+      uploadCopy.innerHTML = '<span class="file-name"></span><br><span>사진 ' + files.length + '장</span>';
+      uploadCopy.querySelector('.file-name').textContent = files[0].name;
+    }
+
+    function updateSubmitState() {
+      submitButton.disabled = submitting || !form.checkValidity();
+    }
+
+    function setSubmitting(value) {
+      submitting = value;
+      controls.forEach((control) => { control.disabled = value; });
+      errorBanner.hidden = true;
+      loading.hidden = !value;
+      updateSubmitState();
+    }
+
+    fileInput.addEventListener('change', () => {
+      updateFileSummary();
+      updateSubmitState();
+    });
+    form.addEventListener('input', updateSubmitState);
+    retryButton.addEventListener('click', () => {
+      errorBanner.hidden = true;
+      updateSubmitState();
+    });
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (submitting || !form.checkValidity()) return;
+      setSubmitting(true);
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+        });
+        if (!response.ok) throw new Error('upload failed');
+        document.documentElement.innerHTML = await response.text();
+      } catch (error) {
+        setSubmitting(false);
+        errorBanner.hidden = false;
+      }
+    });
+    updateSubmitState();
+  </script>
 </body>
 </html>
 """
@@ -272,130 +428,172 @@ RESULT_PAGE_HTML = """
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #F7F6F2;
-    --ink: #1C1C1A;
-    --ink-muted: #6E6B62;
-    --rule: #DDD8CB;
-    --pass: #2F6B4F;
-    --fail: #B3261E;
-    --review: #A66A00;
+    --ds-color-canvas: #F7F6F2;
+    --ds-color-surface: #FFFFFF;
+    --ds-color-ink: #1C1C1A;
+    --ds-color-muted: #6E6B62;
+    --ds-color-rule: #DDD8CB;
+    --ds-color-pass: #2F6B4F;
+    --ds-color-review: #A66A00;
+    --ds-color-fail: #B3261E;
+    --ds-color-warning-surface: #FFF5DF;
+    --ds-font-body: 'Pretendard', -apple-system, sans-serif;
+    --ds-font-display: 'Noto Serif KR', serif;
+    --ds-text-sm: 13px;
+    --ds-text-md: 15px;
+    --ds-text-lg: 26px;
+    --ds-space-1: 6px;
+    --ds-space-2: 10px;
+    --ds-space-3: 16px;
+    --ds-space-4: 24px;
+    --ds-space-5: 36px;
   }
   * { box-sizing: border-box; }
   body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--ds-color-canvas);
+    color: var(--ds-color-ink);
+    font-family: var(--ds-font-body);
     max-width: 560px;
     margin: 0 auto;
-    padding: 48px 24px 80px;
+    padding: var(--ds-space-5) var(--ds-space-3) 64px;
   }
   h1 {
-    font-family: 'Noto Serif KR', serif;
-    font-size: 26px;
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-lg);
     font-weight: 700;
-    margin: 0 0 6px;
+    line-height: 1.35;
+    margin: 0 0 var(--ds-space-1);
   }
   .meta {
-    color: var(--ink-muted);
-    font-size: 14px;
-    margin: 0 0 4px;
+    color: var(--ds-color-muted);
+    font-size: var(--ds-text-sm);
+    line-height: 1.5;
+    margin: 0 0 var(--ds-space-1);
   }
   .history {
-    color: var(--ink-muted);
-    font-size: 13px;
-    margin: 12px 0 0;
-    padding-left: 16px;
+    color: var(--ds-color-muted);
+    font-size: var(--ds-text-sm);
+    line-height: 1.5;
+    margin: var(--ds-space-2) 0 0;
+    padding-left: var(--ds-space-3);
   }
   .history li { margin-bottom: 2px; }
 
   .error-block {
-    margin-top: 28px;
-    padding: 16px 0 16px 16px;
-    border-left: 3px solid var(--fail);
+    margin-top: var(--ds-space-4);
+    padding: var(--ds-space-3) 0 var(--ds-space-3) var(--ds-space-3);
+    border-left: 3px solid var(--ds-color-fail);
   }
   .error-block .title {
-    color: var(--fail);
+    color: var(--ds-color-fail);
     font-weight: 600;
-    margin: 0 0 6px;
+    margin: 0 0 var(--ds-space-1);
   }
   .error-block .detail {
-    color: var(--ink-muted);
-    font-size: 13px;
+    color: var(--ds-color-muted);
+    font-size: var(--ds-text-sm);
     margin: 0;
   }
 
-  .results { margin-top: 36px; }
+  .results { margin-top: var(--ds-space-5); }
   .row {
-    padding: 18px 0 18px 16px;
-    border-top: 1px solid var(--rule);
-    border-left: 3px solid var(--rule);
+    padding: var(--ds-space-3) 0 var(--ds-space-3) var(--ds-space-3);
+    border-top: 1px solid var(--ds-color-rule);
   }
-  .row.PASS { border-left-color: var(--pass); }
-  .row.FAIL { border-left-color: var(--fail); }
-  .row.REVIEW { border-left-color: var(--review); }
 
   .row-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    margin-bottom: 8px;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-2);
   }
-  .status {
-    font-weight: 600;
-    font-size: 14px;
+  .status-stamp {
+    display: inline-block;
+    flex: 0 0 auto;
+    border: 2px solid currentColor;
+    border-radius: 2px;
+    background: transparent;
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-sm);
+    font-weight: 700;
+    line-height: 1;
+    padding: 7px 9px;
   }
-  .status.PASS { color: var(--pass); }
-  .status.FAIL { color: var(--fail); }
-  .status.REVIEW { color: var(--review); }
+  .status-stamp.PASS { color: var(--ds-color-pass); }
+  .status-stamp.REVIEW { color: var(--ds-color-review); }
+  .status-stamp.FAIL { color: var(--ds-color-fail); }
   .filename {
-    color: var(--ink-muted);
-    font-size: 13px;
+    min-width: 0;
+    color: var(--ds-color-muted);
+    font-size: var(--ds-text-sm);
+    overflow-wrap: anywhere;
+    text-align: right;
   }
-  .flag {
-    color: var(--fail);
-    font-size: 13px;
+  .grading-note {
+    margin-top: var(--ds-space-2);
+    padding: var(--ds-space-2) var(--ds-space-3);
+    border-left: 2px solid var(--ds-color-rule);
+    background: var(--ds-color-surface);
   }
   .reason {
-    font-size: 15px;
+    font-family: var(--ds-font-display);
+    font-size: var(--ds-text-md);
     line-height: 1.6;
     margin: 0;
   }
   .weak {
-    margin: 10px 0 0;
-    padding-left: 18px;
-    color: var(--ink-muted);
-    font-size: 13px;
+    margin: var(--ds-space-2) 0 0;
+    padding-left: var(--ds-space-3);
+    color: var(--ds-color-muted);
+    font-size: var(--ds-text-sm);
     line-height: 1.6;
   }
-  .dup {
-    margin: 10px 0 0;
-    font-size: 13px;
-    color: var(--review);
+  .warning-banner {
+    margin: var(--ds-space-3) 0 0;
+    padding: var(--ds-space-2) var(--ds-space-3);
+    border-left: 3px solid var(--ds-color-review);
+    background: var(--ds-color-warning-surface);
+    color: var(--ds-color-review);
+    font-size: var(--ds-text-sm);
+    line-height: 1.5;
+  }
+  .duplicate-note {
+    margin: var(--ds-space-2) 0 0;
+    color: var(--ds-color-review);
+    font-size: var(--ds-text-sm);
+    line-height: 1.5;
   }
   .idnote {
-    margin: 6px 0 0;
-    font-size: 13px;
-    color: var(--review);
+    margin: var(--ds-space-1) 0 0;
+    color: var(--ds-color-review);
+    font-size: var(--ds-text-sm);
   }
   .idnote.mismatch {
-    color: var(--fail);
+    color: var(--ds-color-fail);
     font-weight: 600;
   }
 
   .footer {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid var(--rule);
+    margin-top: var(--ds-space-5);
+    padding-top: var(--ds-space-3);
+    border-top: 1px solid var(--ds-color-rule);
   }
   .footer a {
-    color: var(--ink);
-    font-size: 14px;
+    color: var(--ds-color-ink);
+    font-size: var(--ds-text-sm);
+  }
+  @media (max-width: 480px) {
+    body { padding: var(--ds-space-4) var(--ds-space-3) 48px; }
+    h1 { font-size: 23px; }
+    .row-head { align-items: flex-start; flex-direction: column; }
+    .filename { text-align: left; }
   }
 </style>
 </head>
 <body>
   <h1>{{ student_name }} — {{ assignment_name }}</h1>
-  <p class="meta">{{ submitted_at }} 제출{% if student_id %} · 학번 {{ student_id }}{% endif %}</p>
+  <p class="meta">{{ submitted_at }} 제출 · 사진 {{ results|length }}장{% if student_id %} · 학번 {{ student_id }}{% endif %}</p>
 
   {% if past_submissions %}
   <p class="meta">이전 제출 {{ past_submissions|length }}건</p>
@@ -419,25 +617,31 @@ RESULT_PAGE_HTML = """
   {% for r in results %}
     <div class="row {{ r.final_result }}">
       <div class="row-head">
-        <span class="status {{ r.final_result }}">
-          {% if r.final_result == "PASS" %}통과{% elif r.final_result == "FAIL" %}미흡{% else %}검토 필요{% endif %}
+        <span class="status-stamp {{ r.final_result }}">
+          {{ r.final_result }}
         </span>
         <span class="filename">{{ r.filename }}</span>
       </div>
-      <p class="reason">{{ r.reason }}</p>
+      <div class="grading-note">
+        <p class="reason">{{ r.reason }}</p>
+        {% if r.missing_or_weak %}
+        <ul class="weak">
+          {% for m in r.missing_or_weak %}
+          <li>{{ m }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
       {% if r.needs_attention %}
-      <p class="flag">✎ 선생님 확인 권장</p>
-      {% endif %}
-      {% if r.missing_or_weak %}
-      <ul class="weak">
-        {% for m in r.missing_or_weak %}
-        <li>{{ m }}</li>
-        {% endfor %}
-      </ul>
+      <div class="warning-banner" role="note">선생님 확인 권장</div>
       {% endif %}
       {% if r.duplicate_check.duplicate_status != "UNIQUE" %}
-      <p class="dup">중복 의심: {{ r.duplicate_check.duplicate_status }}
-        {% if r.duplicate_check.matched_with %}({{ r.duplicate_check.matched_with }}와 유사){% endif %}
+      <p class="duplicate-note">
+        {% if r.duplicate_check.duplicate_status == "EXACT_DUPLICATE" %}
+        중복 가능성 있음
+        {% else %}
+        이전 제출과 유사도가 높음
+        {% endif %}
       </p>
       {% endif %}
       {% if r.student_id_match == "MISMATCH" %}
@@ -588,12 +792,12 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
   <style>
     :root {
       --ink: #1C1C1A;
-      --muted: #6E6B62;
+      --ink-muted: #6E6B62;
       --rule: #DDD8CB;
       --paper: #F7F6F2;
-      --pass: #2F6B4A;
-      --review: #A6752E;
-      --fail: #A23B32;
+      --pass: #2F6B4F;
+      --review: #A66A00;
+      --fail: #B3261E;
       --attention: #FFF5DF;
     }
     * { box-sizing: border-box; }
@@ -622,7 +826,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
       line-height: 1.3;
     }
     .logout {
-      color: var(--muted);
+      color: var(--ink-muted);
       font-size: 14px;
       text-decoration: none;
       white-space: nowrap;
@@ -643,7 +847,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
     .summary-item:last-child { border-right: 0; }
     .summary-label {
       display: block;
-      color: var(--muted);
+      color: var(--ink-muted);
       font-size: 13px;
       margin-bottom: 8px;
     }
@@ -658,7 +862,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
       table-layout: fixed;
     }
     .submission-table th {
-      color: var(--muted);
+      color: var(--ink-muted);
       font-size: 12px;
       font-weight: 500;
       letter-spacing: 0;
@@ -678,7 +882,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
     }
     .student-link:hover, .student-link:focus-visible { text-decoration: underline; }
     .student-id, .submitted-at {
-      color: var(--muted);
+      color: var(--ink-muted);
       font-size: 14px;
     }
     .status-stamp {
@@ -709,7 +913,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
     .empty-state {
       border-top: 1px solid var(--rule);
       border-bottom: 1px solid var(--rule);
-      color: var(--muted);
+      color: var(--ink-muted);
       padding: 32px 16px;
       text-align: center;
     }
@@ -775,24 +979,24 @@ STUDENT_SUBMISSIONS_HTML = SUBMISSION_COMPONENTS + """
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ student_name }} 제출 기록</title>
   <style>
-    :root { --ink: #1C1C1A; --muted: #6E6B62; --rule: #DDD8CB; --paper: #F7F6F2; --pass: #2F6B4A; --review: #A6752E; --fail: #A23B32; }
+    :root { --ink: #1C1C1A; --ink-muted: #6E6B62; --rule: #DDD8CB; --paper: #F7F6F2; --pass: #2F6B4F; --review: #A66A00; --fail: #B3261E; }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--paper); color: var(--ink); font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     main { max-width: 760px; margin: 0 auto; padding: 48px 32px 64px; }
     header { margin-bottom: 32px; }
     .back-link { display: inline-block; margin-bottom: 20px; }
     h1 { margin: 0; font-family: "Noto Serif KR", Georgia, serif; font-size: 26px; line-height: 1.35; font-weight: 600; }
-    a { color: var(--muted); font-size: 14px; text-decoration: none; }
+    a { color: var(--ink-muted); font-size: 14px; text-decoration: none; }
     a:hover, a:focus-visible { color: var(--ink); text-decoration: underline; }
     .submission-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .submission-table th { color: var(--muted); font-size: 12px; font-weight: 500; padding: 0 16px 12px; text-align: left; }
+    .submission-table th { color: var(--ink-muted); font-size: 12px; font-weight: 500; padding: 0 16px 12px; text-align: left; }
     .submission-table td { border-top: 1px solid var(--rule); padding: 18px 16px; vertical-align: middle; overflow-wrap: anywhere; }
     .status-stamp { display: inline-block; border: 2px solid currentColor; border-radius: 2px; background: transparent; font-family: "Noto Serif KR", Georgia, serif; font-size: 13px; line-height: 1; padding: 6px 8px; }
     .status-stamp.PASS { color: var(--pass); }
     .status-stamp.REVIEW { color: var(--review); }
     .status-stamp.FAIL { color: var(--fail); }
     .attention { display: inline-block; background: #FFF5DF; color: var(--review); font-size: 13px; padding: 6px 8px; }
-    .student-id, .submitted-at { color: var(--muted); font-size: 14px; }
+    .student-id, .submitted-at { color: var(--ink-muted); font-size: 14px; }
     @media (max-width: 520px) { main { padding: 32px 20px 48px; } h1 { font-size: 25px; } }
   </style>
 </head>
