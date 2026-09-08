@@ -19,8 +19,13 @@ def request_entity_too_large(error):
         """
         <!DOCTYPE html>
         <html lang="ko">
-        <head><meta charset="UTF-8"><title>업로드 오류</title></head>
-        <body style="max-width: 480px; margin: 48px auto; padding: 0 24px; font-family: sans-serif;">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>업로드 오류</title>
+          <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        </head>
+        <body class="error-page">
           <h1>업로드 용량이 너무 큽니다</h1>
           <p>한 번에 업로드할 수 있는 파일 크기는 50MB까지입니다.</p>
           <a href="/">다시 업로드</a>
@@ -61,20 +66,21 @@ def login():
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>선생님 로그인</title>
+          <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
           <style>
             :root {
-              --paper: #F7F6F2;
-              --surface: #FFFFFF;
-              --ink: #1C1C1A;
-              --ink-muted: #6E6B62;
-              --rule: #DDD8CB;
-              --error: #B3261E;
+              --paper: var(--color-background);
+              --surface: var(--color-surface);
+              --ink: var(--color-text-primary);
+              --ink-muted: var(--color-text-secondary);
+              --rule: var(--color-border);
+              --error: var(--color-error);
             }
             * { box-sizing: border-box; }
             body {
               background: var(--paper);
               color: var(--ink);
-              font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              font-family: var(--font-body);
               margin: 0;
             }
             .login-page {
@@ -126,7 +132,7 @@ def login():
               border: 0;
               border-radius: 4px;
               background: var(--ink);
-              color: #FFFFFF;
+              color: var(--color-surface);
               font: inherit;
               font-weight: 600;
               cursor: pointer;
@@ -138,13 +144,13 @@ def login():
           </style>
         </head>
         <body>
-          <main class="login-page">
+          <main class="auth-layout login-page">
             <h1 class="login-title">선생님 로그인</h1>
             <form method="POST">
               <label class="login-label" for="password">비밀번호</label>
-              <input class="login-input" id="password" name="password" type="password" required autofocus>
+              <input class="input login-input" id="password" name="password" type="password" required autofocus>
               {% if error %}<p class="login-error">{{ error }}</p>{% endif %}
-              <button class="login-button" type="submit">로그인</button>
+              <button class="button login-button" type="submit">로그인</button>
             </form>
           </main>
         </body>
@@ -169,27 +175,28 @@ UPLOAD_FORM_HTML = """
 <title>숙제 검사기</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 <style>
   :root {
-    --paper: #F7F6F2;
-    --surface: #FFFFFF;
-    --ink: #1C1C1A;
-    --ink-muted: #6E6B62;
-    --rule: #DDD8CB;
-    --error: #A23B32;
-    --error-surface: #FBEDEA;
+    --paper: var(--color-background);
+    --surface: var(--color-surface);
+    --ink: var(--color-text-primary);
+    --ink-muted: var(--color-text-secondary);
+    --rule: var(--color-border);
+    --error: var(--color-error);
+    --error-surface: var(--color-surface-muted);
   }
   * { box-sizing: border-box; }
   body {
     background: var(--paper);
     color: var(--ink);
-    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-family: var(--font-body);
     max-width: 480px;
     margin: 0 auto;
     padding: 32px 20px 48px;
   }
   h1 {
-    font-family: 'Noto Serif KR', serif;
+    font-family: var(--font-display);
     font-size: 25px;
     font-weight: 700;
     margin: 0 0 4px;
@@ -318,16 +325,16 @@ UPLOAD_FORM_HTML = """
   }
 </style>
 </head>
-<body>
+<body class="student-page">
   <h1>숙제 사진 업로드</h1>
   <p class="sub">숙제 사진을 올려주세요</p>
   <form id="upload-form" method="POST" action="/upload" enctype="multipart/form-data">
     <div class="field">
       <label for="student-id">학생 ID (선택)</label>
-      <input id="student-id" type="text" name="student_id" placeholder="예: 20315" autocomplete="off">
+      <input class="input" id="student-id" type="text" name="student_id" placeholder="예: 20315" autocomplete="off">
     </div>
     <div class="field">
-      <label class="upload-label" for="photos">
+      <label class="file-upload-zone upload-label" for="photos">
         <span id="upload-copy" class="upload-copy"><strong>사진을 선택해주세요</strong><span>여러 장 선택 가능</span></span>
         <input id="photos" type="file" name="photos" accept="image/*" multiple required>
       </label>
@@ -336,22 +343,22 @@ UPLOAD_FORM_HTML = """
       <summary>제출 정보 입력</summary>
       <div class="field">
         <label for="student-name">학생 이름</label>
-        <input id="student-name" type="text" name="student_name" required>
+        <input class="input" id="student-name" type="text" name="student_name" required>
       </div>
       <div class="field">
         <label for="assignment-name">숙제명</label>
-        <input id="assignment-name" type="text" name="assignment_name" required>
+        <input class="input" id="assignment-name" type="text" name="assignment_name" required>
       </div>
     </details>
     <div id="error-banner" class="error-banner" role="alert" hidden>
       <div>일시적인 오류가 발생했습니다. 다시 시도해주세요.</div>
-      <button id="retry-button" class="retry-button" type="button">다시 시도</button>
+      <button id="retry-button" class="button retry-button" type="button">다시 시도</button>
     </div>
     <div id="loading" class="loading" role="status" aria-live="polite" hidden>
       <span class="spinner" aria-hidden="true"></span>
       <span>채점 중입니다. 최대 1~2분 정도 걸릴 수 있어요.</span>
     </div>
-    <button id="submit-button" type="submit" disabled>제출하고 검사하기</button>
+    <button id="submit-button" class="button loading-button" type="submit" disabled>제출하고 검사하기</button>
   </form>
   <script>
     const form = document.getElementById('upload-form');
@@ -398,11 +405,12 @@ UPLOAD_FORM_HTML = """
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (submitting || !form.checkValidity()) return;
+      const formData = new FormData(form);
       setSubmitting(true);
       try {
         const response = await fetch(form.action, {
           method: 'POST',
-          body: new FormData(form),
+          body: formData,
         });
         if (!response.ok) throw new Error('upload failed');
         document.documentElement.innerHTML = await response.text();
@@ -426,19 +434,20 @@ RESULT_PAGE_HTML = """
 <title>검사 결과</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 <style>
   :root {
-    --ds-color-canvas: #F7F6F2;
-    --ds-color-surface: #FFFFFF;
-    --ds-color-ink: #1C1C1A;
-    --ds-color-muted: #6E6B62;
-    --ds-color-rule: #DDD8CB;
-    --ds-color-pass: #2F6B4F;
-    --ds-color-review: #A66A00;
-    --ds-color-fail: #B3261E;
-    --ds-color-warning-surface: #FFF5DF;
-    --ds-font-body: 'Pretendard', -apple-system, sans-serif;
-    --ds-font-display: 'Noto Serif KR', serif;
+    --ds-color-canvas: var(--color-background);
+    --ds-color-surface: var(--color-surface);
+    --ds-color-ink: var(--color-text-primary);
+    --ds-color-muted: var(--color-text-secondary);
+    --ds-color-rule: var(--color-border);
+    --ds-color-pass: var(--color-success);
+    --ds-color-review: var(--color-warning);
+    --ds-color-fail: var(--color-error);
+    --ds-color-warning-surface: var(--color-surface-muted);
+    --ds-font-body: var(--font-body);
+    --ds-font-display: var(--font-display);
     --ds-text-sm: 13px;
     --ds-text-md: 15px;
     --ds-text-lg: 26px;
@@ -591,7 +600,7 @@ RESULT_PAGE_HTML = """
   }
 </style>
 </head>
-<body>
+<body class="result-page">
   <h1>{{ student_name }} — {{ assignment_name }}</h1>
   <p class="meta">{{ submitted_at }} 제출 · 사진 {{ results|length }}장{% if student_id %} · 학번 {{ student_id }}{% endif %}</p>
 
@@ -633,7 +642,7 @@ RESULT_PAGE_HTML = """
         {% endif %}
       </div>
       {% if r.needs_attention %}
-      <div class="warning-banner" role="note">선생님 확인 권장</div>
+      <div class="status-banner warning-banner" role="note">선생님 확인 권장</div>
       {% endif %}
       {% if r.duplicate_check.duplicate_status != "UNIQUE" %}
       <p class="duplicate-note">
@@ -789,23 +798,24 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>제출 현황</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <style>
     :root {
-      --ink: #1C1C1A;
-      --ink-muted: #6E6B62;
-      --rule: #DDD8CB;
-      --paper: #F7F6F2;
-      --pass: #2F6B4F;
-      --review: #A66A00;
-      --fail: #B3261E;
-      --attention: #FFF5DF;
+      --ink: var(--color-text-primary);
+      --ink-muted: var(--color-text-secondary);
+      --rule: var(--color-border);
+      --paper: var(--color-background);
+      --pass: var(--color-success);
+      --review: var(--color-warning);
+      --fail: var(--color-error);
+      --attention: var(--color-surface-muted);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       background: var(--paper);
       color: var(--ink);
-      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--font-body);
     }
     .dashboard {
       max-width: 1120px;
@@ -821,7 +831,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
     }
     h1 {
       margin: 0;
-      font-family: "Noto Serif KR", Georgia, serif;
+      font-family: var(--font-display);
       font-size: 30px;
       line-height: 1.3;
     }
@@ -890,7 +900,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
       border: 2px solid currentColor;
       border-radius: 2px;
       background: transparent;
-      font-family: "Noto Serif KR", Georgia, serif;
+      font-family: var(--font-display);
       font-size: 13px;
       line-height: 1;
       padding: 6px 8px;
@@ -931,7 +941,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
       .dashboard { padding: 24px 16px 40px; }
       .dashboard-header { align-items: flex-start; }
       h1 { font-size: 25px; }
-      .summary { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 24px; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 24px; }
       .summary-item { padding: 10px 5px; text-align: center; }
       .summary-label { font-size: 10px; white-space: nowrap; }
       .summary-value { font-size: 18px; }
@@ -948,7 +958,7 @@ SUBMISSIONS_DASHBOARD_HTML = SUBMISSION_COMPONENTS + """
   </style>
 </head>
 <body>
-  <main class="dashboard">
+  <main class="dashboard-layout dashboard">
     <header class="dashboard-header">
       <h1>제출 현황</h1>
       <a class="logout" href="{{ url_for('logout') }}">로그아웃</a>
@@ -978,26 +988,36 @@ STUDENT_SUBMISSIONS_HTML = SUBMISSION_COMPONENTS + """
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ student_name }} 제출 기록</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <style>
-    :root { --ink: #1C1C1A; --ink-muted: #6E6B62; --rule: #DDD8CB; --paper: #F7F6F2; --pass: #2F6B4F; --review: #A66A00; --fail: #B3261E; }
+    :root { --ink: var(--color-text-primary); --ink-muted: var(--color-text-secondary); --rule: var(--color-border); --paper: var(--color-background); --pass: var(--color-success); --review: var(--color-warning); --fail: var(--color-error); }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--paper); color: var(--ink); font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
     main { max-width: 760px; margin: 0 auto; padding: 48px 32px 64px; }
     header { margin-bottom: 32px; }
     .back-link { display: inline-block; margin-bottom: 20px; }
-    h1 { margin: 0; font-family: "Noto Serif KR", Georgia, serif; font-size: 26px; line-height: 1.35; font-weight: 600; }
+    h1 { margin: 0; font-family: var(--font-display); font-size: 26px; line-height: 1.35; font-weight: 600; }
     a { color: var(--ink-muted); font-size: 14px; text-decoration: none; }
     a:hover, a:focus-visible { color: var(--ink); text-decoration: underline; }
     .submission-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .submission-table th { color: var(--ink-muted); font-size: 12px; font-weight: 500; padding: 0 16px 12px; text-align: left; }
     .submission-table td { border-top: 1px solid var(--rule); padding: 18px 16px; vertical-align: middle; overflow-wrap: anywhere; }
-    .status-stamp { display: inline-block; border: 2px solid currentColor; border-radius: 2px; background: transparent; font-family: "Noto Serif KR", Georgia, serif; font-size: 13px; line-height: 1; padding: 6px 8px; }
+    .status-stamp { display: inline-block; border: 2px solid currentColor; border-radius: 2px; background: transparent; font-family: var(--font-display); font-size: 13px; line-height: 1; padding: 6px 8px; }
     .status-stamp.PASS { color: var(--pass); }
     .status-stamp.REVIEW { color: var(--review); }
     .status-stamp.FAIL { color: var(--fail); }
-    .attention { display: inline-block; background: #FFF5DF; color: var(--review); font-size: 13px; padding: 6px 8px; }
+    .attention { display: inline-block; background: var(--color-surface-muted); color: var(--review); font-size: 13px; padding: 6px 8px; }
     .student-id, .submitted-at { color: var(--ink-muted); font-size: 14px; }
-    @media (max-width: 520px) { main { padding: 32px 20px 48px; } h1 { font-size: 25px; } }
+    @media (max-width: 520px) {
+      main { padding: 32px 20px 48px; }
+      h1 { font-size: 25px; }
+      .submission-table thead { display: none; }
+      .submission-table, .submission-table tbody, .submission-table tr, .submission-table td { display: block; width: 100%; }
+      .submission-table tr { border-top: 1px solid var(--rule); padding: 16px 0; }
+      .submission-table td { border: 0; padding: 3px 0; }
+      .submission-table td:first-child { padding-bottom: 6px; }
+      .status-stamp { margin-bottom: 3px; }
+    }
   </style>
 </head>
 <body>
