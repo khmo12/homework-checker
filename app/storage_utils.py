@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import os
+import time
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -47,12 +48,15 @@ def upload_file(file_path: str, object_path: str) -> None:
         raise RuntimeError("Supabase is not configured")
 
     content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+    upload_started = time.perf_counter()
+    print(f"[PERF] Supabase Storage upload START path={object_path}", flush=True)
     with open(file_path, "rb") as file:
         client.storage.from_(STORAGE_BUCKET).upload(
             object_path,
             file,
             {"content-type": content_type, "upsert": "false"},
         )
+    print(f"[PERF] Supabase Storage upload END path={object_path} elapsed={time.perf_counter() - upload_started:.2f}s", flush=True)
 
 
 def upload_submission_files(submission_id: str, file_paths: list[str]) -> dict:
@@ -89,9 +93,13 @@ def persist_submission(record: dict, source_paths: Optional[list[str]] = None) -
     payload["storage_error"] = storage_error
 
     db_error = None
+    db_insert_started = time.perf_counter()
+    print("[PERF] Supabase DB insert START", flush=True)
     try:
         client.table("submissions").insert(payload).execute()
+        print(f"[PERF] Supabase DB insert END elapsed={time.perf_counter() - db_insert_started:.2f}s", flush=True)
     except Exception as error:
+        print(f"[PERF] Supabase DB insert END elapsed={time.perf_counter() - db_insert_started:.2f}s", flush=True)
         logger.exception("Supabase submission insert failed for %s", record["submission_id"])
         db_error = str(error)
 
@@ -119,8 +127,11 @@ def fetch_submissions() -> Optional[list[dict]]:
 
 
 def save_duplicate_history(entries: dict) -> bool:
+    history_started = time.perf_counter()
+    print("[PERF] save_duplicate_history START", flush=True)
     client = _get_client()
     if client is None or not entries:
+        print(f"[PERF] save_duplicate_history END elapsed={time.perf_counter() - history_started:.2f}s", flush=True)
         return False
 
     rows = [
@@ -129,24 +140,32 @@ def save_duplicate_history(entries: dict) -> bool:
     ]
     try:
         client.table("duplicate_history").upsert(rows, on_conflict="history_key").execute()
+        print(f"[PERF] save_duplicate_history END elapsed={time.perf_counter() - history_started:.2f}s", flush=True)
         return True
     except Exception:
+        print(f"[PERF] save_duplicate_history END elapsed={time.perf_counter() - history_started:.2f}s", flush=True)
         logger.exception("Supabase duplicate history save failed")
         return False
 
 
 def fetch_duplicate_history() -> Optional[dict]:
+    history_started = time.perf_counter()
+    print("[PERF] fetch_duplicate_history START", flush=True)
     client = _get_client()
     if client is None:
+        print(f"[PERF] fetch_duplicate_history END elapsed={time.perf_counter() - history_started:.2f}s", flush=True)
         return None
 
     try:
         response = client.table("duplicate_history").select("history_key,hash_value").execute()
-        return {
+        history = {
             row["history_key"]: row["hash_value"]
             for row in (response.data or [])
             if row.get("history_key") and row.get("hash_value")
         }
+        print(f"[PERF] fetch_duplicate_history END elapsed={time.perf_counter() - history_started:.2f}s", flush=True)
+        return history
     except Exception:
+        print(f"[PERF] fetch_duplicate_history END elapsed={time.perf_counter() - history_started:.2f}s", flush=True)
         logger.exception("Supabase duplicate history query failed")
         return None

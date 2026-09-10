@@ -2,6 +2,7 @@ from PIL import Image
 from app.storage_utils import fetch_duplicate_history, save_duplicate_history
 import json
 import os
+import time
 import uuid
 
 DATA_DIR = os.environ.get("DATA_DIR", "data")
@@ -13,6 +14,8 @@ HASH_SIZE = 8
 
 def _compute_hash(image_path: str) -> int:
     """Compute a small perceptual dHash without NumPy or SciPy."""
+    hash_started = time.perf_counter()
+    print(f"[PERF] dHash START path={os.path.basename(image_path)}", flush=True)
     with Image.open(image_path) as source:
         source.draft("L", (HASH_SIZE + 1, HASH_SIZE))
         image = source.convert("L")
@@ -27,6 +30,7 @@ def _compute_hash(image_path: str) -> int:
             value <<= 1
             if pixels[offset + column] > pixels[offset + column + 1]:
                 value |= 1
+    print(f"[PERF] dHash END path={os.path.basename(image_path)} elapsed={time.perf_counter() - hash_started:.2f}s", flush=True)
     return value
 
 
@@ -60,6 +64,8 @@ def _distance(first: int, second: int) -> int:
 
 def check_duplicates(image_paths: list[str]) -> dict:
     """Check similar images without loading SciPy or ImageHash."""
+    duplicates_started = time.perf_counter()
+    print("[PERF] check_duplicates START", flush=True)
     history = _load_history()
     results = {}
     current_hashes = {}
@@ -118,4 +124,5 @@ def check_duplicates(image_paths: list[str]) -> dict:
         history[f"{filename}#{uuid.uuid4().hex}"] = f"{HASH_PREFIX}{image_hash:016x}"
     _save_history(history)
 
+    print(f"[PERF] check_duplicates END elapsed={time.perf_counter() - duplicates_started:.2f}s", flush=True)
     return results

@@ -128,11 +128,14 @@ def _call_gemini_with_retry(contents, max_retries=3):
     for attempt in range(max_retries):
         try:
             print(f"[Gemini 호출] {attempt + 1}번째 시도 시작", flush=True)
+            print("[PERF] generate_content START", flush=True)
+            generate_started = time.perf_counter()
             result = _client.models.generate_content(
                 model=MODEL_NAME,
                 contents=contents,
                 config={"response_mime_type": "application/json"}
             )
+            print(f"[PERF] generate_content END elapsed={time.perf_counter() - generate_started:.2f}s", flush=True)
             print(f"[Gemini 호출] {attempt + 1}번째 시도 성공", flush=True)
             return result
         except Exception as e:
@@ -219,21 +222,26 @@ def check_homework(image_paths: list[str], subject_name: str = "국어", student
         "results": [ {filename, ...판정결과, final_result, duplicate_check} ... ]
     }
     """
+    check_started = time.perf_counter()
+    print("[PERF] check_homework START", flush=True)
     if not image_paths:
+        print(f"[PERF] check_homework END elapsed={time.perf_counter() - check_started:.2f}s", flush=True)
         return {
             "processing_status": "FAILED",
             "error": "이미지 경로가 비어있습니다.",
             "raw_response": None,
             "results": []
         }
-
     try:
         duplicate_results = check_duplicates(image_paths)
 
         uploaded_files = []
         for idx, path in enumerate(image_paths):
             processed_path = preprocess_image(path)
+            print(f"[PERF] Gemini files.upload START index={idx}", flush=True)
+            files_upload_started = time.perf_counter()
             uploaded = _client.files.upload(file=processed_path)
+            print(f"[PERF] Gemini files.upload END index={idx} elapsed={time.perf_counter() - files_upload_started:.2f}s", flush=True)
             uploaded_files.append({
                 "index": idx,
                 "filename": os.path.basename(path),  # 원본 파일명 그대로 기록 (사용자에게 보여줄 이름)
@@ -264,6 +272,7 @@ def check_homework(image_paths: list[str], subject_name: str = "국어", student
             )
             final_results.append(entry)
 
+        print(f"[PERF] check_homework END elapsed={time.perf_counter() - check_started:.2f}s", flush=True)
         return {
             "processing_status": "SUCCESS",
             "error": None,
@@ -273,6 +282,7 @@ def check_homework(image_paths: list[str], subject_name: str = "국어", student
 
     except Exception as e:
         # API 오류와 AI 판정 결과를 분리 (인수인계 문서 11번 항목)
+        print(f"[PERF] check_homework END elapsed={time.perf_counter() - check_started:.2f}s", flush=True)
         return {
             "processing_status": "FAILED",
             "error": str(e),

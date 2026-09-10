@@ -2,6 +2,7 @@ import uuid
 from PIL import Image
 import io
 import os
+import time
 
 MAX_LONG_SIDE = 1800  # 긴 변 기준 리사이즈 크기 (px)
 JPEG_QUALITY = 85      # JPEG 압축 품질 (0~100, 85면 화질 저하 거의 안 느껴짐)
@@ -20,6 +21,8 @@ def preprocess_image(input_path: str, output_dir: str = PROCESSED_DIR) -> str:
     글씨가 뭉개지지 않도록 MAX_LONG_SIDE는 1800px로 설정
     (인수인계 문서 권장 범위 1500~2000px 중간값)
     """
+    preprocess_started = time.perf_counter()
+    print(f"[PERF] preprocess_image START path={os.path.basename(input_path)}", flush=True)
     os.makedirs(output_dir, exist_ok=True)
 
     img = Image.open(input_path)
@@ -55,6 +58,7 @@ def preprocess_image(input_path: str, output_dir: str = PROCESSED_DIR) -> str:
 
         img.save(output_path, "JPEG", quality=JPEG_QUALITY, optimize=True)
 
+        print(f"[PERF] preprocess_image END path={os.path.basename(input_path)} elapsed={time.perf_counter() - preprocess_started:.2f}s", flush=True)
         return output_path
     finally:
         img.close()

@@ -6,6 +6,7 @@ from app.submission_utils import save_submission, get_all_submissions, get_submi
 import os
 import glob
 import re
+import time
 import uuid
 
 app = Flask(__name__)
@@ -680,9 +681,12 @@ def index():
 
 @app.route("/upload", methods=["POST"])
 def upload():
+    upload_started = time.perf_counter()
+    print("[PERF] /upload START", flush=True)
     files = request.files.getlist("photos")
 
     if not files or files[0].filename == "":
+        print(f"[PERF] /upload END elapsed={time.perf_counter() - upload_started:.2f}s", flush=True)
         return jsonify({"error": "선택된 파일이 없습니다."}), 400
 
     student_name = request.form.get("student_name", "").strip()
@@ -690,16 +694,21 @@ def upload():
     assignment_name = request.form.get("assignment_name", "").strip()
 
     if not student_name or not assignment_name:
+        print(f"[PERF] /upload END elapsed={time.perf_counter() - upload_started:.2f}s", flush=True)
         return jsonify({"error": "학생 이름과 숙제명을 입력해주세요."}), 400
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+    local_save_started = time.perf_counter()
+    print("[PERF] local file save START", flush=True)
     extensions = [
-      os.path.splitext(os.path.basename(file.filename))[1].lower()
-      for file in files
+        os.path.splitext(os.path.basename(file.filename))[1].lower()
+        for file in files
     ]
     if any(extension not in ALLOWED_IMAGE_EXTENSIONS for extension in extensions):
-      return jsonify({"error": "지원되지 않는 이미지 형식입니다."}), 400
+        print(f"[PERF] local file save END elapsed={time.perf_counter() - local_save_started:.2f}s", flush=True)
+        print(f"[PERF] /upload END elapsed={time.perf_counter() - upload_started:.2f}s", flush=True)
+        return jsonify({"error": "지원되지 않는 이미지 형식입니다."}), 400
 
     saved_paths = []
     for index, (file, extension) in enumerate(zip(files, extensions)):
@@ -707,9 +716,12 @@ def upload():
         save_path = os.path.join(UPLOAD_FOLDER, local_filename)
         file.save(save_path)
         saved_paths.append(save_path)
+    print(f"[PERF] local file save END elapsed={time.perf_counter() - local_save_started:.2f}s", flush=True)
 
     result = check_homework(saved_paths, subject_name="국어", student_id=student_id)
 
+    save_submission_started = time.perf_counter()
+    print("[PERF] save_submission START", flush=True)
     submission_record = save_submission(
         student_name=student_name,
         subject_name="국어",
@@ -718,6 +730,7 @@ def upload():
         student_id=student_id,
         source_paths=saved_paths,
     )
+    print(f"[PERF] save_submission END elapsed={time.perf_counter() - save_submission_started:.2f}s", flush=True)
 
     past_submissions = [
         s for s in get_submissions_by_student(student_name)
@@ -730,8 +743,10 @@ def upload():
         response["student_name"] = student_name
         response["student_id"] = student_id
         response["assignment_name"] = assignment_name
+        print(f"[PERF] /upload END elapsed={time.perf_counter() - upload_started:.2f}s", flush=True)
         return jsonify(response)
 
+    print(f"[PERF] /upload END elapsed={time.perf_counter() - upload_started:.2f}s", flush=True)
     return render_template_string(
         RESULT_PAGE_HTML,
         student_name=student_name,
