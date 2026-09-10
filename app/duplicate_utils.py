@@ -1,6 +1,8 @@
 from PIL import Image
+from app.storage_utils import fetch_duplicate_history, save_duplicate_history
 import json
 import os
+import uuid
 
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 HASH_HISTORY_PATH = os.path.join(DATA_DIR, "hash_history.json")
@@ -29,19 +31,27 @@ def _compute_hash(image_path: str) -> int:
 
 
 def _load_history() -> dict:
+    local_history = {}
     if not os.path.exists(HASH_HISTORY_PATH):
-        return {}
-    try:
-        with open(HASH_HISTORY_PATH, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except (json.JSONDecodeError, OSError):
-        return {}
+        local_history = {}
+    else:
+        try:
+            with open(HASH_HISTORY_PATH, "r", encoding="utf-8") as file:
+                local_history = json.load(file)
+        except (json.JSONDecodeError, OSError):
+            local_history = {}
+
+    remote_history = fetch_duplicate_history()
+    if remote_history is not None:
+        local_history.update(remote_history)
+    return local_history
 
 
 def _save_history(history: dict) -> None:
     os.makedirs(os.path.dirname(HASH_HISTORY_PATH), exist_ok=True)
     with open(HASH_HISTORY_PATH, "w", encoding="utf-8") as file:
         json.dump(history, file, ensure_ascii=False, indent=2)
+    save_duplicate_history(history)
 
 
 def _distance(first: int, second: int) -> int:
@@ -105,7 +115,7 @@ def check_duplicates(image_paths: list[str]) -> dict:
         }
 
     for filename, image_hash in current_hashes.items():
-        history[filename] = f"{HASH_PREFIX}{image_hash:016x}"
+        history[f"{filename}#{uuid.uuid4().hex}"] = f"{HASH_PREFIX}{image_hash:016x}"
     _save_history(history)
 
     return results

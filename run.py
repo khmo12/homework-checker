@@ -5,6 +5,8 @@ from app.ai_engine import check_homework
 from app.submission_utils import save_submission, get_all_submissions, get_submissions_by_student
 import os
 import glob
+import re
+import uuid
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-in-render")
@@ -36,6 +38,7 @@ def request_entity_too_large(error):
 
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
 
 
 def teacher_required(view):
@@ -691,9 +694,17 @@ def upload():
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+    extensions = [
+      os.path.splitext(os.path.basename(file.filename))[1].lower()
+      for file in files
+    ]
+    if any(extension not in ALLOWED_IMAGE_EXTENSIONS for extension in extensions):
+      return jsonify({"error": "지원되지 않는 이미지 형식입니다."}), 400
+
     saved_paths = []
-    for file in files:
-        save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    for index, (file, extension) in enumerate(zip(files, extensions)):
+        local_filename = f"{uuid.uuid4().hex}_{index}{extension}"
+        save_path = os.path.join(UPLOAD_FOLDER, local_filename)
         file.save(save_path)
         saved_paths.append(save_path)
 
@@ -705,6 +716,7 @@ def upload():
         assignment_name=assignment_name,
         check_result=result,
         student_id=student_id,
+        source_paths=saved_paths,
     )
 
     past_submissions = [

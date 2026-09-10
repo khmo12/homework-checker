@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 from datetime import datetime
+from app.storage_utils import fetch_submissions, persist_submission
 
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 SUBMISSIONS_FILE = os.path.join(DATA_DIR, "submissions.json")
@@ -23,7 +24,7 @@ def _save_all(submissions):
         json.dump(submissions, f, ensure_ascii=False, indent=2)
 
 
-def save_submission(student_name, subject_name, assignment_name, check_result, student_id=""):
+def save_submission(student_name, subject_name, assignment_name, check_result, student_id="", source_paths=None):
     submissions = _load_all()
     record = {
         "submission_id": str(uuid.uuid4()),
@@ -38,12 +39,22 @@ def save_submission(student_name, subject_name, assignment_name, check_result, s
     }
     submissions.append(record)
     _save_all(submissions)
+    persist_submission(record, source_paths=source_paths)
     return record
 
 
 def get_all_submissions():
-    return _load_all()
+    local_submissions = _load_all()
+    remote_submissions = fetch_submissions()
+    if remote_submissions is None:
+        return local_submissions
+
+    submissions_by_id = {submission["submission_id"]: submission for submission in local_submissions}
+    submissions_by_id.update(
+        {submission["submission_id"]: submission for submission in remote_submissions}
+    )
+    return list(submissions_by_id.values())
 
 
 def get_submissions_by_student(student_name):
-    return [s for s in _load_all() if s["student_name"] == student_name]
+    return [s for s in get_all_submissions() if s["student_name"] == student_name]
